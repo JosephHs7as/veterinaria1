@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Buscar Veterinarias Cercanas</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
+  <link rel="stylesheet" href="css/estyles.css" />
+  <style>
+    #map {
+      width: 100%;
+      height: 400px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-success sticky-top">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">
+        <i class="fas fa-paw"></i> Patitas Felices
+      </a>
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#navbarNav"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div
+        class="collapse navbar-collapse justify-content-end"
+        id="navbarNav"
+      >
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" href="index.html">Inicio</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="mapa.html">Buscar Veterinarias</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="login.html">Iniciar Sesión</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container my-4">
+    <h2 class="text-success mb-3 text-center">
+      <i class="fas fa-map-marker-alt"></i> Veterinarias Cercanas
+    </h2>
+    <div id="map"></div>
+    <p class="text-center text-muted">
+      Usa el botón de abajo para mostrar veterinarias cercanas a tu ubicación.
+    </p>
+    <div class="d-flex justify-content-center">
+      <button id="btnBuscar" class="btn btn-success">
+        <i class="fas fa-location-arrow me-2"></i> Buscar Veterinarias Cercanas
+      </button>
+    </div>
+  </main>
+
+  <footer class="bg-success text-white text-center py-3 fixed-bottom">
+    &copy; 2025 Veterinaria Patitas Felices - Todos los derechos reservados
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=TU_API_KEY&libraries=places"
+    async
+    defer
+  ></script>
+  <script>
+    let map;
+    let service;
+    let infowindow;
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: -12.0464, lng: -77.0428 }, // Lima por defecto
+        zoom: 13,
+      });
+
+      infowindow = new google.maps.InfoWindow();
+    }
+
+    window.initMap = initMap;
+
+    document.getElementById("btnBuscar").addEventListener("click", () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const userLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            map.setCenter(userLocation);
+
+            const request = {
+              location: userLocation,
+              radius: "3000",
+              type: ["veterinary_care"],
+            };
+
+            service = new google.maps.places.PlacesService(map);
+            service.nearbySearch(request, (results, status) => {
+              if (
+                status === google.maps.places.PlacesServiceStatus.OK &&
+                results.length > 0
+              ) {
+                clearMarkers();
+                results.forEach((place) => {
+                  createMarker(place);
+                });
+              } else {
+                alert("No se encontraron veterinarias cercanas.");
+              }
+            });
+          },
+          () => {
+            alert("No se pudo obtener tu ubicación.");
+          }
+        );
+      } else {
+        alert("Geolocalización no soportada por tu navegador.");
+      }
+    });
+
+    let markers = [];
+
+    function createMarker(place) {
+      if (!place.geometry || !place.geometry.location) return;
+
+      const marker = new google.maps.Marker({
+        map,
+        position: place.geometry.location,
+        title: place.name,
+      });
+
+      google.maps.event.addListener(marker, "click", () => {
+        infowindow.setContent(
+          `<strong>${place.name}</strong><br>${place.vicinity || ""}`
+        );
+        infowindow.open(map, marker);
+      });
+
+      markers.push(marker);
+    }
+
+    function clearMarkers() {
+      markers.forEach((marker) => marker.setMap(null));
+      markers = [];
+    }
+  </script>
+</body>
+</html>
